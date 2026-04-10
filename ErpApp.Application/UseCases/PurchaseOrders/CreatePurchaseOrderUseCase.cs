@@ -25,27 +25,62 @@ namespace ErpApp.Application.UseCases.PurchaseOrders
             if (dto.Items == null || !dto.Items.Any())
                 throw new ArgumentException("La orden debe contener al menos un ítem.");
 
+            if (dto.TaxRate < 0 || dto.TaxRate > 100)
+                throw new ArgumentException("La tasa de impuesto debe estar entre 0 y 100.");
+
+            var orderDate = dto.OrderDate == default ? DateTime.UtcNow : dto.OrderDate;
+            var series = string.IsNullOrWhiteSpace(dto.Series) ? "PO" : dto.Series.Trim().ToUpperInvariant();
+            var sequenceNumber = await _repository.GetNextSequenceNumberAsync(series, orderDate);
+
+            var details = new List<PurchaseOrderDetail>();
+            decimal subtotalAmount = 0;
+
+            foreach (var item in dto.Items)
+            {
+                if (item.Quantity <= 0)
+                    throw new ArgumentException($"Cantidad inválida para el producto {item.ProductId}.");
+
+                var product = await _productRepository.GetByIdAsync(item.ProductId);
+                if (product == null)
+                    throw new ArgumentException($"Producto con ID {item.ProductId} no encontrado.");
+
+                subtotalAmount += product.Price * item.Quantity;
+
+                details.Add(new PurchaseOrderDetail
+                {
+                    ProductId = item.ProductId,
+                    Quantity = item.Quantity,
+                    UnitPrice = product.Price
+                });
+            }
+
+            if (dto.DiscountAmount < 0)
+                throw new ArgumentException("El descuento no puede ser negativo.");
+
+            if (dto.DiscountAmount > subtotalAmount)
+                throw new ArgumentException("El descuento no puede ser mayor al subtotal.");
+
+            var taxableBase = subtotalAmount - dto.DiscountAmount;
+            var taxAmount = Math.Round(taxableBase * (dto.TaxRate / 100m), 2);
+            var totalAmount = taxableBase + taxAmount;
+
             var order = new PurchaseOrder
             {
-                OrderDate = dto.OrderDate == default ? DateTime.UtcNow : dto.OrderDate,
+                OrderDate = orderDate,
                 Status = "Pending",
-                Items = dto.Items.Select(i => new PurchaseOrderDetail
-                {
-                    ProductId = i.ProductId,
-                    Quantity = i.Quantity,
-                    UnitPrice = (_productRepository.GetByIdAsync(i.ProductId))?.Result?.Price ?? 0
-                }).ToList()
+                Series = series,
+                SequenceNumber = sequenceNumber,
+                OrderNumber = $"{series}-{orderDate:yyyyMMdd}-{sequenceNumber:D6}",
+                SubtotalAmount = subtotalAmount,
+                DiscountAmount = dto.DiscountAmount,
+                TaxRate = dto.TaxRate,
+                TaxAmount = taxAmount,
+                TotalAmount = totalAmount,
+                Items = details
             };
 
             await _repository.AddAsync(order);
             await _repository.SaveChangesAsync();
-
-            order.OrderNumber = $"PO-{order.OrderDate:yyyyMMdd}-{order.Id:D5}";
-
-            await _repository.UpdateAsync(order);
-            await _repository.SaveChangesAsync();
-
-
             return order;
         }
         private string GenerateOrderNumber()

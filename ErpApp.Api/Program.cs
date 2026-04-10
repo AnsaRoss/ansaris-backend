@@ -38,6 +38,7 @@ builder.Services.AddScoped<CreatePurchaseOrderUseCase>();
 builder.Services.AddScoped<GetAllPurchaseOrdersUseCase>();
 builder.Services.AddScoped<GetPurchaseOrderByIdUseCase>();
 builder.Services.AddScoped<ReceivePurchaseOrderUseCase>();
+builder.Services.AddScoped<CancelPurchaseOrderUseCase>();
 
 // UseCases SalesOrder
 builder.Services.AddScoped<CreateSalesOrderUseCase>();
@@ -56,6 +57,9 @@ builder.Services.AddScoped<DeleteCustomerUseCase>();
 builder.Services.AddScoped<CreateInvoiceUseCase>();
 builder.Services.AddScoped<GenerateAccountingEntriesUseCase>();
 builder.Services.AddScoped<RegisterPaymentUseCase>();
+builder.Services.AddScoped<CancelInvoiceUseCase>();
+builder.Services.AddScoped<GetInvoiceByIdUseCase>();
+builder.Services.AddScoped<GetAllInvoicesUseCase>();
 
 
 // 📦 Servicios de controladores + Swagger

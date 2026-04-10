@@ -15,6 +15,7 @@ namespace ErpApp.Domain.Ports
         Task SaveChangesAsync();
         Task UpdateAsync(PurchaseOrder order);
         Task<PurchaseOrder?> GetByOrderNumberAsync(string orderNumber);
+        Task<int> GetNextSequenceNumberAsync(string series, DateTime date);
 
     }
 

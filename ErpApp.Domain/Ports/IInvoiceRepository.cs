@@ -10,10 +10,11 @@ namespace ErpApp.Domain.Ports
     public interface IInvoiceRepository
     {
         Task AddAsync(Invoice invoice);
-        Task<Invoice> GetByIdAsync(int id);
+        Task<Invoice?> GetByIdAsync(int id);
 
         Task UpdateAsync(Invoice invoice);
         Task SaveChangesAsync();
         Task<IEnumerable<Invoice>> GetAllAsync();
+        Task<int> GetNextSequenceNumberAsync(string series, DateTime date);
     }
 }

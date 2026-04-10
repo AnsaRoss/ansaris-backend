@@ -40,6 +40,59 @@ namespace ERPApp.Persistence
                 .WithMany()
                 .HasForeignKey(d => d.ProductId);
 
+            modelBuilder.Entity<PurchaseOrder>()
+                .Property(p => p.SubtotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .Property(p => p.DiscountAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .Property(p => p.TaxRate)
+                .HasColumnType("decimal(5,2)");
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .Property(p => p.TaxAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<PurchaseOrder>()
+                .Property(p => p.TotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.SubtotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.DiscountAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.TaxRate)
+                .HasColumnType("decimal(5,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.TaxAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.TotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .Property(i => i.PaidAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<Invoice>()
+                .HasMany(i => i.Items)
+                .WithOne()
+                .HasForeignKey(i => i.InvoiceId);
+
+            modelBuilder.Entity<InvoiceItem>()
+                .Property(i => i.UnitPrice)
+                .HasColumnType("decimal(18,2)");
+
 
         }
     }
