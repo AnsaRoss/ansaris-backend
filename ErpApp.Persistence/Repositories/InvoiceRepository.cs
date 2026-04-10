@@ -32,6 +32,7 @@ namespace ErpApp.Persistence.Repositories
         public async Task<Invoice?> GetByIdAsync(int id)
         {
             return await _context.Invoices
+                .Include(i => i.Warehouse)
                 .Include(i => i.Items)
                 .FirstOrDefaultAsync(i => i.Id == id);
         }
@@ -39,6 +40,7 @@ namespace ErpApp.Persistence.Repositories
         public async Task<IEnumerable<Invoice>> GetAllAsync()
         {
             return await _context.Invoices
+                .Include(i => i.Warehouse)
                 .Include(i => i.Items)
                 .OrderByDescending(i => i.Date)
                 .ThenByDescending(i => i.SequenceNumber)

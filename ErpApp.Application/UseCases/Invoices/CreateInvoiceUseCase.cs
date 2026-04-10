@@ -1,6 +1,5 @@
 ﻿using ErpApp.Domain.Entities;
 using ErpApp.Domain;
-using ErpApp.Domain.Entities;
 using ErpApp.Domain.Ports;
 using ErpApp.Application.Dtos.Invoice;
 using ErpApp.Application.Constants;
@@ -13,17 +12,26 @@ namespace ErpApp.Application.UseCases.Invoices
         private readonly IAccountTransactionRepository _transactionRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IProductRepository _productRepository;
+        private readonly IInventoryMovementRepository _movementRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
+        private readonly IProductWarehouseStockRepository _warehouseStockRepository;
 
         public CreateInvoiceUseCase(
             IInvoiceRepository invoiceRepository,
             IAccountTransactionRepository transactionRepository,
             IUnitOfWork unitOfWork,
-            IProductRepository productRepository)
+            IProductRepository productRepository,
+            IInventoryMovementRepository movementRepository,
+            IWarehouseRepository warehouseRepository,
+            IProductWarehouseStockRepository warehouseStockRepository)
         {
             _invoiceRepository = invoiceRepository;
             _transactionRepository = transactionRepository;
             _unitOfWork = unitOfWork;
             _productRepository = productRepository;
+            _movementRepository = movementRepository;
+            _warehouseRepository = warehouseRepository;
+            _warehouseStockRepository = warehouseStockRepository;
         }
 
         public async Task<int> ExecuteAsync(CreateInvoiceDto dto)
@@ -33,6 +41,19 @@ namespace ErpApp.Application.UseCases.Invoices
 
             if (dto.TaxRate < 0 || dto.TaxRate > 100)
                 throw new Exception("La tasa de IVA debe estar entre 0 y 100.");
+
+            Warehouse? warehouse = null;
+            if (dto.Type == InvoiceType.Sale)
+            {
+                if (!dto.WarehouseId.HasValue)
+                    throw new Exception("WarehouseId es obligatorio para facturas de venta.");
+
+                warehouse = await _warehouseRepository.GetByIdAsync(dto.WarehouseId.Value)
+                    ?? throw new Exception($"Almacén con ID {dto.WarehouseId.Value} no encontrado.");
+
+                if (!warehouse.IsActive)
+                    throw new Exception("El almacén seleccionado está inactivo.");
+            }
 
             var invoiceItems = new List<InvoiceItem>();
             decimal subtotalAmount = 0;
@@ -45,6 +66,20 @@ namespace ErpApp.Application.UseCases.Invoices
 
                 if (item.Quantity <= 0)
                     throw new Exception($"Cantidad inválida para el producto {item.ProductId}.");
+
+                if (dto.Type == InvoiceType.Sale)
+                {
+                    var warehouseStock = await _warehouseStockRepository.GetAsync(product.Id, warehouse!.Id);
+                    var availableInWarehouse = warehouseStock == null
+                        ? 0
+                        : warehouseStock.OnHand - warehouseStock.Reserved;
+
+                    if (availableInWarehouse < item.Quantity)
+                        throw new Exception($"Stock insuficiente en almacén {warehouse.Code} para el producto {product.Name}. Disponible: {availableInWarehouse}.");
+
+                    if (product.Stock < item.Quantity)
+                        throw new Exception($"Stock global insuficiente para el producto {product.Name}. Stock actual: {product.Stock}.");
+                }
                 
                 var itemTotal = product.Price * item.Quantity;
                 subtotalAmount += itemTotal;
@@ -78,6 +113,7 @@ namespace ErpApp.Application.UseCases.Invoices
                 Date = invoiceDate,
                 Type = dto.Type,
                 CustomerId = dto.CustomerId,
+                WarehouseId = dto.WarehouseId,
                 Series = series,
                 SequenceNumber = sequenceNumber,
                 InvoiceNumber = $"{series}-{invoiceDate:yyyyMMdd}-{sequenceNumber:D6}",
@@ -93,6 +129,50 @@ namespace ErpApp.Application.UseCases.Invoices
 
             await _invoiceRepository.AddAsync(invoice);
             await _invoiceRepository.SaveChangesAsync();
+
+            if (dto.Type == InvoiceType.Sale)
+            {
+                foreach (var item in invoiceItems)
+                {
+                    var product = await _productRepository.GetByIdAsync(item.ProductId);
+                    if (product == null)
+                        continue;
+
+                    var warehouseStock = await _warehouseStockRepository.GetAsync(product.Id, warehouse!.Id)
+                        ?? throw new Exception($"Stock por almacén no encontrado para producto {product.Name}.");
+
+                    var warehouseStockBefore = warehouseStock.OnHand;
+                    var warehouseReservedBefore = warehouseStock.Reserved;
+
+                    product.Stock -= item.Quantity;
+                    var reservedToConsume = Math.Min(product.ReservedStock, item.Quantity);
+                    product.ReservedStock -= reservedToConsume;
+
+                    warehouseStock.OnHand -= item.Quantity;
+                    var reservedToConsumeWh = Math.Min(warehouseStock.Reserved, item.Quantity);
+                    warehouseStock.Reserved -= reservedToConsumeWh;
+
+                    var movement = new InventoryMovement
+                    {
+                        ProductId = product.Id,
+                        WarehouseId = warehouse.Id,
+                        MovementDate = DateTime.UtcNow,
+                        MovementType = InventoryMovementType.Outbound,
+                        Quantity = -item.Quantity,
+                        StockBefore = warehouseStockBefore,
+                        StockAfter = warehouseStock.OnHand,
+                        ReservedQuantityDelta = -reservedToConsumeWh,
+                        ReservedBefore = warehouseReservedBefore,
+                        ReservedAfter = warehouseStock.Reserved,
+                        UnitCost = item.UnitPrice,
+                        ReferenceType = "Invoice",
+                        ReferenceNumber = invoice.InvoiceNumber ?? invoice.Id.ToString(),
+                        Notes = "Salida por facturación"
+                    };
+
+                    await _movementRepository.AddAsync(movement);
+                }
+            }
 
             var debitAccountId = dto.Type == InvoiceType.Sale
                 ? LedgerAccounts.AccountsReceivable

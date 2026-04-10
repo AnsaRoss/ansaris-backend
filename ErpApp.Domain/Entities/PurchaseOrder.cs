@@ -13,6 +13,8 @@ namespace ErpApp.Domain.Entities
         public string Series { get; set; } = "PO";
         public int SequenceNumber { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
+        public int WarehouseId { get; set; }
+        public Warehouse Warehouse { get; set; } = null!;
         public string Status { get; set; } = "Pending"; // Pending, Received, Cancelled
         public decimal SubtotalAmount { get; set; }
         public decimal DiscountAmount { get; set; }

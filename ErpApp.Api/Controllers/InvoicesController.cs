@@ -44,6 +44,7 @@ namespace ErpApp.Api.Controllers
                 id = createdInvoice?.Id ?? invoiceId,
                 invoiceNumber = createdInvoice?.InvoiceNumber,
                 series = createdInvoice?.Series,
+                warehouseId = createdInvoice?.WarehouseId,
                 date = createdInvoice?.Date,
                 subtotalAmount = createdInvoice?.SubtotalAmount,
                 discountAmount = createdInvoice?.DiscountAmount,

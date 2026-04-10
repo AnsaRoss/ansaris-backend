@@ -25,4 +25,20 @@ namespace ErpApp.Domain
         Income = 3,      // Ingreso
         Expense = 4      // Gasto
     }
+
+    public enum InventoryMovementType
+    {
+        Inbound = 1,
+        Outbound = 2,
+        Adjustment = 3,
+        Reservation = 4,
+        Release = 5
+    }
+
+    public enum InventoryTransferStatus
+    {
+        Pending = 1,
+        Completed = 2,
+        Cancelled = 3
+    }
 }

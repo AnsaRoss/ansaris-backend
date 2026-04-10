@@ -27,6 +27,7 @@ namespace ErpApp.Persistence.Repositories
         public async Task<PurchaseOrder?> GetByIdAsync(string orderNumber)
         {
             return await _context.PurchaseOrders
+                .Include(o => o.Warehouse)
                 .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
                 .FirstOrDefaultAsync(o => o.OrderNumber == orderNumber);
@@ -35,6 +36,7 @@ namespace ErpApp.Persistence.Repositories
         public async Task<List<PurchaseOrder>> GetAllAsync()
         {
             return await _context.PurchaseOrders
+                .Include(o => o.Warehouse)
                 .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
                 .OrderByDescending(o => o.OrderDate)

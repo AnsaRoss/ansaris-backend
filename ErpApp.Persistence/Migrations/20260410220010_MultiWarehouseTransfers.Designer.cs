@@ -4,6 +4,7 @@ using ERPApp.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ErpApp.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260410220010_MultiWarehouseTransfers")]
+    partial class MultiWarehouseTransfers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -302,12 +305,7 @@ namespace ErpApp.Persistence.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<int?>("WarehouseId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("WarehouseId");
 
                     b.ToTable("Invoices");
                 });
@@ -459,12 +457,7 @@ namespace ErpApp.Persistence.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("WarehouseId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("WarehouseId");
 
                     b.ToTable("PurchaseOrders");
                 });
@@ -637,16 +630,6 @@ namespace ErpApp.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("ErpApp.Domain.Entities.Invoice", b =>
-                {
-                    b.HasOne("ErpApp.Domain.Entities.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("Warehouse");
-                });
-
             modelBuilder.Entity("ErpApp.Domain.Entities.InvoiceItem", b =>
                 {
                     b.HasOne("ErpApp.Domain.Entities.Invoice", null)
@@ -671,17 +654,6 @@ namespace ErpApp.Persistence.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
-
-                    b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("ErpApp.Domain.Entities.PurchaseOrder", b =>
-                {
-                    b.HasOne("ErpApp.Domain.Entities.Warehouse", "Warehouse")
-                        .WithMany()
-                        .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
 
                     b.Navigation("Warehouse");
                 });

@@ -1,6 +1,7 @@
 using ErpApp.Application.UseCases.Customers;
 using ErpApp.Application.UseCases.Invoice;
 using ErpApp.Application.UseCases.Invoices;
+using ErpApp.Application.UseCases.Inventory;
 using ErpApp.Application.UseCases.Products;
 using ErpApp.Application.UseCases.PurchaseOrders;
 using ErpApp.Application.UseCases.SaleOrders;
@@ -24,6 +25,11 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IAccountTransactionRepository, AccountTransactionRepository>();
+builder.Services.AddScoped<IInventoryMovementRepository, InventoryMovementRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddScoped<IProductWarehouseStockRepository, ProductWarehouseStockRepository>();
+builder.Services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
@@ -60,6 +66,21 @@ builder.Services.AddScoped<RegisterPaymentUseCase>();
 builder.Services.AddScoped<CancelInvoiceUseCase>();
 builder.Services.AddScoped<GetInvoiceByIdUseCase>();
 builder.Services.AddScoped<GetAllInvoicesUseCase>();
+
+// UseCases Inventory
+builder.Services.AddScoped<GetInventoryStockUseCase>();
+builder.Services.AddScoped<GetInventoryMovementsByProductUseCase>();
+builder.Services.AddScoped<GetKardexUseCase>();
+builder.Services.AddScoped<GetInventoryValuationUseCase>();
+builder.Services.AddScoped<AdjustInventoryUseCase>();
+builder.Services.AddScoped<ReserveStockUseCase>();
+builder.Services.AddScoped<ReleaseStockUseCase>();
+builder.Services.AddScoped<ReverseInventoryMovementUseCase>();
+builder.Services.AddScoped<CreateWarehouseUseCase>();
+builder.Services.AddScoped<GetWarehousesUseCase>();
+builder.Services.AddScoped<GetWarehouseStockUseCase>();
+builder.Services.AddScoped<ExecuteInventoryTransferUseCase>();
+builder.Services.AddScoped<GetInventoryTransfersUseCase>();
 
 
 // 📦 Servicios de controladores + Swagger

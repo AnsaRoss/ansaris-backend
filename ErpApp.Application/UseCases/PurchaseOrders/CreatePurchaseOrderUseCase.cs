@@ -13,11 +13,16 @@ namespace ErpApp.Application.UseCases.PurchaseOrders
     {
         private readonly IPurchaseOrderRepository _repository;
         private readonly IProductRepository _productRepository;
+        private readonly IWarehouseRepository _warehouseRepository;
 
-        public CreatePurchaseOrderUseCase(IPurchaseOrderRepository repository, IProductRepository productRepository)
+        public CreatePurchaseOrderUseCase(
+            IPurchaseOrderRepository repository,
+            IProductRepository productRepository,
+            IWarehouseRepository warehouseRepository)
         {
             _repository = repository;
             _productRepository = productRepository;
+            _warehouseRepository = warehouseRepository;
         }
 
         public async Task<PurchaseOrder> ExecuteAsync(PurchaseOrderCreateDto dto)
@@ -27,6 +32,15 @@ namespace ErpApp.Application.UseCases.PurchaseOrders
 
             if (dto.TaxRate < 0 || dto.TaxRate > 100)
                 throw new ArgumentException("La tasa de impuesto debe estar entre 0 y 100.");
+
+            if (dto.WarehouseId <= 0)
+                throw new ArgumentException("WarehouseId es obligatorio.");
+
+            var warehouse = await _warehouseRepository.GetByIdAsync(dto.WarehouseId)
+                ?? throw new ArgumentException($"Almacén con ID {dto.WarehouseId} no encontrado.");
+
+            if (!warehouse.IsActive)
+                throw new ArgumentException("El almacén seleccionado está inactivo.");
 
             var orderDate = dto.OrderDate == default ? DateTime.UtcNow : dto.OrderDate;
             var series = string.IsNullOrWhiteSpace(dto.Series) ? "PO" : dto.Series.Trim().ToUpperInvariant();
@@ -67,6 +81,7 @@ namespace ErpApp.Application.UseCases.PurchaseOrders
             var order = new PurchaseOrder
             {
                 OrderDate = orderDate,
+                WarehouseId = warehouse.Id,
                 Status = "Pending",
                 Series = series,
                 SequenceNumber = sequenceNumber,

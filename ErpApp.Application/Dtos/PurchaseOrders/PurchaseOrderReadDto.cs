@@ -11,6 +11,7 @@ namespace ErpApp.Application.Dtos.PurchaseOrders
         public int Id { get; set; }
         public string OrderNumber { get; set; } = string.Empty;
         public DateTime OrderDate { get; set; }
+        public int WarehouseId { get; set; }
         public string Status { get; set; } = "Pending";
         public List<PurchaseOrderItemReadDto> Items { get; set; } = new();
     }
