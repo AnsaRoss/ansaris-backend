@@ -40,8 +40,21 @@ namespace ErpApp.Persistence.Repositories
         {
             return await _context.Invoices
                 .Include(i => i.Items)
+                .OrderByDescending(i => i.Date)
+                .ThenByDescending(i => i.SequenceNumber)
                 .ToListAsync();
         }
+
+        public async Task<int> GetNextSequenceNumberAsync(string series, DateTime date)
+        {
+            var currentMax = await _context.Invoices
+                .Where(i => i.Series == series && i.Date.Year == date.Year)
+                .Select(i => (int?)i.SequenceNumber)
+                .MaxAsync() ?? 0;
+
+            return currentMax + 1;
+        }
+
         public Task UpdateAsync(Invoice invoice)
         {
             _context.Invoices.Update(invoice);

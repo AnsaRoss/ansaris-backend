@@ -1,4 +1,5 @@
 ﻿using ErpApp.Application.Constants;
+using ErpApp.Application.Constants;
 using ErpApp.Domain.Entities;
 using ErpApp.Domain.Ports;
 using ErpApp.Domain;
@@ -28,10 +29,23 @@ namespace ErpApp.Application.UseCases.Invoice
 
         public async Task ExecuteAsync(int invoiceId, decimal paymentAmount, DateTime paymentDate)
         {
+            if (paymentAmount <= 0)
+                throw new Exception("El monto del pago debe ser mayor que cero.");
+
             // Obtener la factura
             var invoice = await _invoiceRepository.GetByIdAsync(invoiceId);
             if (invoice == null)
                 throw new Exception($"Factura con ID {invoiceId} no encontrada.");
+
+            if (invoice.Status == InvoiceStatus.Cancelled)
+                throw new Exception("No se puede registrar pago en una factura anulada.");
+
+            if (invoice.Status == InvoiceStatus.Paid)
+                throw new Exception("La factura ya se encuentra totalmente pagada.");
+
+            var pendingAmount = invoice.TotalAmount - invoice.PaidAmount;
+            if (paymentAmount > pendingAmount)
+                throw new Exception($"El pago ({paymentAmount}) excede el saldo pendiente ({pendingAmount}).");
 
             // Actualizar monto pagado
             invoice.PaidAmount += paymentAmount;

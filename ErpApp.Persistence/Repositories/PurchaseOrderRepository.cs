@@ -37,6 +37,8 @@ namespace ErpApp.Persistence.Repositories
             return await _context.PurchaseOrders
                 .Include(o => o.Items)
                 .ThenInclude(i => i.Product)
+                .OrderByDescending(o => o.OrderDate)
+                .ThenByDescending(o => o.SequenceNumber)
                 .ToListAsync();
         }
 
@@ -55,6 +57,16 @@ namespace ErpApp.Persistence.Repositories
         {
             _context.PurchaseOrders.Update(order);
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> GetNextSequenceNumberAsync(string series, DateTime date)
+        {
+            var currentMax = await _context.PurchaseOrders
+                .Where(o => o.Series == series && o.OrderDate.Year == date.Year)
+                .Select(o => (int?)o.SequenceNumber)
+                .MaxAsync() ?? 0;
+
+            return currentMax + 1;
         }
     }
 }

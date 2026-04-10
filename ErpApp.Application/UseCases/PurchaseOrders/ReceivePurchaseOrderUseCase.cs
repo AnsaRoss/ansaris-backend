@@ -24,6 +24,7 @@ namespace ErpApp.Application.UseCases.PurchaseOrders
             var order = await _purchaseRepo.GetByIdAsync(orderNumber);
             if (order == null) throw new Exception("Orden no encontrada.");
             if (order.Status == "Received") throw new Exception("La orden ya fue recibida.");
+            if (order.Status == "Cancelled") throw new Exception("No se puede recibir una orden anulada.");
 
             // Aumentar stock
             foreach (var item in order.Items)

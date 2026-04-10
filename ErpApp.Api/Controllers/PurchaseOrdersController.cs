@@ -12,17 +12,20 @@ namespace ErpApp.Api.Controllers
         private readonly GetPurchaseOrderByIdUseCase _getByIdUseCase;
         private readonly GetAllPurchaseOrdersUseCase _getAllUseCase;
         private readonly ReceivePurchaseOrderUseCase _receiveUseCase;
+        private readonly CancelPurchaseOrderUseCase _cancelUseCase;
 
         public PurchaseOrdersController(
             CreatePurchaseOrderUseCase createUseCase,
             GetPurchaseOrderByIdUseCase getByIdUseCase,
             GetAllPurchaseOrdersUseCase getAllUseCase,
-            ReceivePurchaseOrderUseCase receiveUseCase)
+            ReceivePurchaseOrderUseCase receiveUseCase,
+            CancelPurchaseOrderUseCase cancelUseCase)
         {
             _createUseCase = createUseCase;
             _getByIdUseCase = getByIdUseCase;
             _getAllUseCase = getAllUseCase;
             _receiveUseCase = receiveUseCase;
+            _cancelUseCase = cancelUseCase;
         }
 
         // POST: api/PurchaseOrders
@@ -68,6 +71,20 @@ namespace ErpApp.Api.Controllers
                     return NotFound();
 
                 return Ok(updatedOrder);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("{orderNumber}/cancel")]
+        public async Task<IActionResult> Cancel(string orderNumber, [FromBody] CancelPurchaseOrderDto dto)
+        {
+            try
+            {
+                await _cancelUseCase.ExecuteAsync(orderNumber, dto?.Reason);
+                return NoContent();
             }
             catch (Exception ex)
             {
