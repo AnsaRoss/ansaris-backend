@@ -5,6 +5,7 @@ using ErpApp.Application.UseCases.Inventory;
 using ErpApp.Application.UseCases.Products;
 using ErpApp.Application.UseCases.PurchaseOrders;
 using ErpApp.Application.UseCases.SaleOrders;
+using ErpApp.Application.UseCases.Treasury;
 using ErpApp.Domain.Ports;
 using ErpApp.Persistence.Repositories;
 using ERPApp.Persistence;
@@ -30,6 +31,8 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 builder.Services.AddScoped<IProductWarehouseStockRepository, ProductWarehouseStockRepository>();
 builder.Services.AddScoped<IInventoryTransferRepository, InventoryTransferRepository>();
+builder.Services.AddScoped<ITreasuryAccountRepository, TreasuryAccountRepository>();
+builder.Services.AddScoped<ITreasuryMovementRepository, TreasuryMovementRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
@@ -66,6 +69,12 @@ builder.Services.AddScoped<RegisterPaymentUseCase>();
 builder.Services.AddScoped<CancelInvoiceUseCase>();
 builder.Services.AddScoped<GetInvoiceByIdUseCase>();
 builder.Services.AddScoped<GetAllInvoicesUseCase>();
+builder.Services.AddScoped<GetInvoicePaymentsUseCase>();
+builder.Services.AddScoped<GetOutstandingInvoicesUseCase>();
+builder.Services.AddScoped<GetInvoiceAgingReportUseCase>();
+builder.Services.AddScoped<GetAgingByCustomerUseCase>();
+builder.Services.AddScoped<GetCustomerStatementUseCase>();
+builder.Services.AddScoped<GetInvoiceKpiSummaryUseCase>();
 
 // UseCases Inventory
 builder.Services.AddScoped<GetInventoryStockUseCase>();
@@ -81,6 +90,13 @@ builder.Services.AddScoped<GetWarehousesUseCase>();
 builder.Services.AddScoped<GetWarehouseStockUseCase>();
 builder.Services.AddScoped<ExecuteInventoryTransferUseCase>();
 builder.Services.AddScoped<GetInventoryTransfersUseCase>();
+
+// UseCases Treasury
+builder.Services.AddScoped<CreateTreasuryAccountUseCase>();
+builder.Services.AddScoped<GetTreasuryAccountsUseCase>();
+builder.Services.AddScoped<RegisterTreasuryMovementUseCase>();
+builder.Services.AddScoped<RegisterTreasuryTransferUseCase>();
+builder.Services.AddScoped<GetTreasuryMovementsUseCase>();
 
 
 // 📦 Servicios de controladores + Swagger

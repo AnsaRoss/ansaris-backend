@@ -16,6 +16,12 @@ namespace ErpApp.Api.Controllers
         private readonly CancelInvoiceUseCase _cancelInvoiceUseCase;
         private readonly GetInvoiceByIdUseCase _getInvoiceByIdUseCase;
         private readonly GetAllInvoicesUseCase _getAllInvoicesUseCase;
+        private readonly GetInvoicePaymentsUseCase _getInvoicePaymentsUseCase;
+        private readonly GetOutstandingInvoicesUseCase _getOutstandingInvoicesUseCase;
+        private readonly GetInvoiceAgingReportUseCase _getInvoiceAgingReportUseCase;
+        private readonly GetAgingByCustomerUseCase _getAgingByCustomerUseCase;
+        private readonly GetCustomerStatementUseCase _getCustomerStatementUseCase;
+        private readonly GetInvoiceKpiSummaryUseCase _getInvoiceKpiSummaryUseCase;
 
         public InvoicesController(
             CreateInvoiceUseCase createInvoiceUseCase,
@@ -23,7 +29,13 @@ namespace ErpApp.Api.Controllers
             RegisterPaymentUseCase registerPaymentUseCase,
             CancelInvoiceUseCase cancelInvoiceUseCase,
             GetInvoiceByIdUseCase getInvoiceByIdUseCase,
-            GetAllInvoicesUseCase getAllInvoicesUseCase)
+            GetAllInvoicesUseCase getAllInvoicesUseCase,
+            GetInvoicePaymentsUseCase getInvoicePaymentsUseCase,
+            GetOutstandingInvoicesUseCase getOutstandingInvoicesUseCase,
+            GetInvoiceAgingReportUseCase getInvoiceAgingReportUseCase,
+            GetAgingByCustomerUseCase getAgingByCustomerUseCase,
+            GetCustomerStatementUseCase getCustomerStatementUseCase,
+            GetInvoiceKpiSummaryUseCase getInvoiceKpiSummaryUseCase)
         {
             _createInvoiceUseCase = createInvoiceUseCase;
             _generateAccountingEntriesUseCase = generateAccountingEntriesUseCase;
@@ -31,6 +43,12 @@ namespace ErpApp.Api.Controllers
             _cancelInvoiceUseCase = cancelInvoiceUseCase;
             _getInvoiceByIdUseCase = getInvoiceByIdUseCase;
             _getAllInvoicesUseCase = getAllInvoicesUseCase;
+            _getInvoicePaymentsUseCase = getInvoicePaymentsUseCase;
+            _getOutstandingInvoicesUseCase = getOutstandingInvoicesUseCase;
+            _getInvoiceAgingReportUseCase = getInvoiceAgingReportUseCase;
+            _getAgingByCustomerUseCase = getAgingByCustomerUseCase;
+            _getCustomerStatementUseCase = getCustomerStatementUseCase;
+            _getInvoiceKpiSummaryUseCase = getInvoiceKpiSummaryUseCase;
         }
 
         [HttpPost]
@@ -46,6 +64,7 @@ namespace ErpApp.Api.Controllers
                 series = createdInvoice?.Series,
                 warehouseId = createdInvoice?.WarehouseId,
                 date = createdInvoice?.Date,
+                dueDate = createdInvoice?.DueDate,
                 subtotalAmount = createdInvoice?.SubtotalAmount,
                 discountAmount = createdInvoice?.DiscountAmount,
                 taxRate = createdInvoice?.TaxRate,
@@ -63,6 +82,59 @@ namespace ErpApp.Api.Controllers
             return Ok(invoices);
         }
 
+        [HttpGet("outstanding")]
+        public async Task<IActionResult> GetOutstanding([FromQuery] int? type)
+        {
+            ErpApp.Domain.InvoiceType? invoiceType = null;
+            if (type.HasValue)
+            {
+                if (!Enum.IsDefined(typeof(ErpApp.Domain.InvoiceType), type.Value))
+                    return BadRequest(new { error = "El parámetro type no es válido." });
+
+                invoiceType = (ErpApp.Domain.InvoiceType)type.Value;
+            }
+
+            var result = await _getOutstandingInvoicesUseCase.ExecuteAsync(invoiceType);
+            return Ok(result);
+        }
+
+        [HttpGet("aging")]
+        public async Task<IActionResult> GetAging([FromQuery] int type, [FromQuery] DateTime? asOfDate, [FromQuery] int creditDays = 30)
+        {
+            if (!Enum.IsDefined(typeof(ErpApp.Domain.InvoiceType), type))
+                return BadRequest(new { error = "El parámetro type no es válido." });
+
+            var result = await _getInvoiceAgingReportUseCase.ExecuteAsync((ErpApp.Domain.InvoiceType)type, asOfDate, creditDays);
+            return Ok(result);
+        }
+
+        [HttpGet("aging-by-customer")]
+        public async Task<IActionResult> GetAgingByCustomer([FromQuery] int type, [FromQuery] DateTime? asOfDate)
+        {
+            if (!Enum.IsDefined(typeof(ErpApp.Domain.InvoiceType), type))
+                return BadRequest(new { error = "El parámetro type no es válido." });
+
+            var result = await _getAgingByCustomerUseCase.ExecuteAsync((ErpApp.Domain.InvoiceType)type, asOfDate);
+            return Ok(result);
+        }
+
+        [HttpGet("customers/{customerId:int}/statement")]
+        public async Task<IActionResult> GetCustomerStatement(int customerId, [FromQuery] int type, [FromQuery] DateTime? asOfDate)
+        {
+            if (!Enum.IsDefined(typeof(ErpApp.Domain.InvoiceType), type))
+                return BadRequest(new { error = "El parámetro type no es válido." });
+
+            var result = await _getCustomerStatementUseCase.ExecuteAsync(customerId, (ErpApp.Domain.InvoiceType)type, asOfDate);
+            return Ok(result);
+        }
+
+        [HttpGet("kpis")]
+        public async Task<IActionResult> GetKpis()
+        {
+            var result = await _getInvoiceKpiSummaryUseCase.ExecuteAsync();
+            return Ok(result);
+        }
+
         [HttpPost("{invoiceId}/generate-entries")]
         public async Task<IActionResult> GenerateEntries(int invoiceId)
         {
@@ -73,8 +145,18 @@ namespace ErpApp.Api.Controllers
         [HttpPost("{invoiceId}/register-payment")]
         public async Task<IActionResult> RegisterPayment(int invoiceId, [FromBody] RegisterPaymentDto dto)
         {
-            await _registerPaymentUseCase.ExecuteAsync(invoiceId, dto.Amount, dto.PaymentDate);
+            await _registerPaymentUseCase.ExecuteAsync(invoiceId, dto.TreasuryAccountId, dto.Amount, dto.PaymentDate, dto.Notes);
             return NoContent();
+        }
+
+        [HttpGet("{invoiceId:int}/payments")]
+        public async Task<IActionResult> GetPayments(int invoiceId)
+        {
+            var payments = await _getInvoicePaymentsUseCase.ExecuteAsync(invoiceId);
+            if (payments == null)
+                return NotFound();
+
+            return Ok(payments);
         }
 
         [HttpPost("{invoiceId:int}/cancel")]

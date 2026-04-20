@@ -26,6 +26,8 @@ namespace ERPApp.Persistence
         public DbSet<ProductWarehouseStock> ProductWarehouseStocks { get; set; }
         public DbSet<InventoryTransfer> InventoryTransfers { get; set; }
         public DbSet<InventoryTransferItem> InventoryTransferItems { get; set; }
+        public DbSet<TreasuryAccount> TreasuryAccounts { get; set; }
+        public DbSet<TreasuryMovement> TreasuryMovements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -177,6 +179,38 @@ namespace ERPApp.Persistence
                 .HasOne(i => i.Product)
                 .WithMany()
                 .HasForeignKey(i => i.ProductId);
+
+            modelBuilder.Entity<TreasuryAccount>()
+                .HasIndex(a => a.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<TreasuryAccount>()
+                .Property(a => a.Balance)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<TreasuryMovement>()
+                .Property(m => m.Amount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<TreasuryMovement>()
+                .Property(m => m.BalanceBefore)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<TreasuryMovement>()
+                .Property(m => m.BalanceAfter)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<TreasuryMovement>()
+                .HasOne(m => m.TreasuryAccount)
+                .WithMany()
+                .HasForeignKey(m => m.TreasuryAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TreasuryMovement>()
+                .HasOne(m => m.CounterpartyTreasuryAccount)
+                .WithMany()
+                .HasForeignKey(m => m.CounterpartyTreasuryAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<AuditLog>()
                 .Property(a => a.Details)

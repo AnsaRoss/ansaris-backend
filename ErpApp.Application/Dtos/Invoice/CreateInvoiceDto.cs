@@ -12,6 +12,8 @@ namespace ErpApp.Application.Dtos.Invoice
         public InvoiceType Type { get; set; }
         public int CustomerId { get; set; }
         public int? WarehouseId { get; set; }
+        public DateTime? DueDate { get; set; }
+        public int? CreditDays { get; set; }
         public string? Series { get; set; }
         public decimal TaxRate { get; set; }
         public decimal DiscountAmount { get; set; }

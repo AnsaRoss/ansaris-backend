@@ -105,12 +105,17 @@ namespace ErpApp.Application.UseCases.Invoices
             var totalAmount = taxableBase + taxAmount;
 
             var invoiceDate = DateTime.Now;
+            var dueDate = dto.DueDate?.Date ?? invoiceDate.Date.AddDays(dto.CreditDays ?? 30);
+            if (dueDate < invoiceDate.Date)
+                throw new Exception("La fecha de vencimiento no puede ser anterior a la fecha de la factura.");
+
             var series = string.IsNullOrWhiteSpace(dto.Series) ? "A" : dto.Series.Trim().ToUpperInvariant();
             var sequenceNumber = await _invoiceRepository.GetNextSequenceNumberAsync(series, invoiceDate);
 
             var invoice = new Domain.Entities.Invoice
             {
                 Date = invoiceDate,
+                DueDate = dueDate,
                 Type = dto.Type,
                 CustomerId = dto.CustomerId,
                 WarehouseId = dto.WarehouseId,

@@ -13,6 +13,7 @@ namespace ErpApp.Domain.Entities
         public string Series { get; set; } = "A";
         public int SequenceNumber { get; set; }
         public DateTime Date { get; set; }
+        public DateTime DueDate { get; set; }
         public InvoiceType Type { get; set; } // Sale or Purchase
         public int CustomerId { get; set; } // o SupplierId según tipo
         public int? WarehouseId { get; set; }

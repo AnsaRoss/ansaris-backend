@@ -23,6 +23,26 @@ namespace ErpApp.Persistence.Migrations
                 type: "int",
                 nullable: true);
 
+            migrationBuilder.Sql(@"
+DECLARE @defaultWarehouseId INT;
+
+SELECT TOP(1) @defaultWarehouseId = [Id]
+FROM [Warehouses]
+ORDER BY [Id];
+
+IF @defaultWarehouseId IS NULL
+BEGIN
+    INSERT INTO [Warehouses] ([Code], [Name], [IsActive])
+    VALUES ('MAIN', 'Almacén Principal', 1);
+
+    SET @defaultWarehouseId = CAST(SCOPE_IDENTITY() AS INT);
+END
+
+UPDATE [PurchaseOrders]
+SET [WarehouseId] = @defaultWarehouseId
+WHERE [WarehouseId] = 0;
+");
+
             migrationBuilder.CreateIndex(
                 name: "IX_PurchaseOrders_WarehouseId",
                 table: "PurchaseOrders",

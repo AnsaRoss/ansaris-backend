@@ -4,6 +4,7 @@ using ERPApp.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ErpApp.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420203233_TreasuryModule")]
+    partial class TreasuryModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -270,9 +273,6 @@ namespace ErpApp.Persistence.Migrations
 
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("DueDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("InvoiceNumber")
                         .HasColumnType("nvarchar(max)");

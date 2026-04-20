@@ -41,4 +41,17 @@ namespace ErpApp.Domain
         Completed = 2,
         Cancelled = 3
     }
+
+    public enum TreasuryAccountType
+    {
+        Cash = 1,
+        Bank = 2
+    }
+
+    public enum TreasuryMovementType
+    {
+        Inflow = 1,
+        Outflow = 2,
+        Transfer = 3
+    }
 }

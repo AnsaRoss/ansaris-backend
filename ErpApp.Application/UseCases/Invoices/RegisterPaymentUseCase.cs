@@ -15,20 +15,29 @@ namespace ErpApp.Application.UseCases.Invoice
     {
         private readonly IInvoiceRepository _invoiceRepository;
         private readonly IAccountTransactionRepository _transactionRepository;
+        private readonly ITreasuryAccountRepository _treasuryAccountRepository;
+        private readonly ITreasuryMovementRepository _treasuryMovementRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public RegisterPaymentUseCase(
             IInvoiceRepository invoiceRepository,
             IAccountTransactionRepository transactionRepository,
+            ITreasuryAccountRepository treasuryAccountRepository,
+            ITreasuryMovementRepository treasuryMovementRepository,
             IUnitOfWork unitOfWork)
         {
             _invoiceRepository = invoiceRepository;
             _transactionRepository = transactionRepository;
+            _treasuryAccountRepository = treasuryAccountRepository;
+            _treasuryMovementRepository = treasuryMovementRepository;
             _unitOfWork = unitOfWork;
         }
 
-        public async Task ExecuteAsync(int invoiceId, decimal paymentAmount, DateTime paymentDate)
+        public async Task ExecuteAsync(int invoiceId, int treasuryAccountId, decimal paymentAmount, DateTime paymentDate, string? notes)
         {
+            if (treasuryAccountId <= 0)
+                throw new Exception("Debe indicar una cuenta de tesorería válida.");
+
             if (paymentAmount <= 0)
                 throw new Exception("El monto del pago debe ser mayor que cero.");
 
@@ -46,6 +55,13 @@ namespace ErpApp.Application.UseCases.Invoice
             var pendingAmount = invoice.TotalAmount - invoice.PaidAmount;
             if (paymentAmount > pendingAmount)
                 throw new Exception($"El pago ({paymentAmount}) excede el saldo pendiente ({pendingAmount}).");
+
+            var treasuryAccount = await _treasuryAccountRepository.GetByIdAsync(treasuryAccountId);
+            if (treasuryAccount == null)
+                throw new Exception($"Cuenta de tesorería con ID {treasuryAccountId} no encontrada.");
+
+            if (!treasuryAccount.IsActive)
+                throw new Exception("La cuenta de tesorería está inactiva.");
 
             // Actualizar monto pagado
             invoice.PaidAmount += paymentAmount;
@@ -85,6 +101,34 @@ namespace ErpApp.Application.UseCases.Invoice
             };
 
             await _transactionRepository.AddAsync(paymentTransaction);
+
+            var treasuryBalanceBefore = treasuryAccount.Balance;
+            if (invoice.Type == InvoiceType.Sale)
+            {
+                treasuryAccount.Balance += paymentAmount;
+            }
+            else
+            {
+                if (treasuryAccount.Balance < paymentAmount)
+                    throw new Exception("Fondos insuficientes en la cuenta de tesorería para registrar el pago.");
+
+                treasuryAccount.Balance -= paymentAmount;
+            }
+
+            var treasuryMovement = new TreasuryMovement
+            {
+                TreasuryAccountId = treasuryAccount.Id,
+                MovementDate = paymentDate,
+                Type = invoice.Type == InvoiceType.Sale ? TreasuryMovementType.Inflow : TreasuryMovementType.Outflow,
+                Amount = paymentAmount,
+                BalanceBefore = treasuryBalanceBefore,
+                BalanceAfter = treasuryAccount.Balance,
+                ReferenceType = "InvoicePayment",
+                ReferenceNumber = invoice.InvoiceNumber ?? invoice.Id.ToString(),
+                Notes = notes
+            };
+
+            await _treasuryMovementRepository.AddAsync(treasuryMovement);
 
             // Commit de todo
             await _unitOfWork.CommitAsync();
